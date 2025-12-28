@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Akuntansi</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="#landing-page">
+                <i class="bi bi-speedometer2"></i> Dashboard Admin
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#input-transaction"><i class="bi bi-pencil-square"></i> Input Transaksi</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#journal"><i class="bi bi-journal-text"></i> Jurnal Umum</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#reports"><i class="bi bi-bar-chart-line"></i> Laporan</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#settings"><i class="bi bi-gear"></i> Data</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 1. Landing Page / Dashboard -->
+    <section id="landing-page" class="app-section active-section">
+        <div class="container">
+            <!-- Dashboard Analytics -->
+            <div class="row mb-4" id="dashboard-analytics">
+                <!-- Analytics Cards will be injected here -->
+            </div>
+
+            <!-- Dashboard Charts -->
+            <div class="row" id="dashboard-charts">
+                <!-- Row 1: Finance Trend (Full Width) -->
+                <div class="col-12 mb-4">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-header bg-white fw-bold">
+                            <i class="bi bi-graph-up"></i> Tren Keuangan 2025
+                        </div>
+                        <div class="card-body">
+                            <canvas id="financeChart" style="max-height: 300px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Row 2: Composition Charts -->
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-header bg-white fw-bold">
+                            <i class="bi bi-pie-chart-fill"></i> Komposisi Pendapatan
+                        </div>
+                        <div class="card-body">
+                            <canvas id="revenueChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-header bg-white fw-bold">
+                            <i class="bi bi-pie-chart"></i> Komposisi Beban
+                        </div>
+                        <div class="card-body">
+                            <canvas id="expenseChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="container py-4">
+        
+        <!-- 2. Input Transaction -->
+        <section id="input-transaction" class="app-section">
+            <h2 class="mb-4 border-bottom pb-2">Input Transaksi</h2>
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    Formulir Transaksi Baru
+                </div>
+                <div class="card-body">
+                    <form id="transaction-form">
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label for="trx-date" class="form-label required">Tanggal</label>
+                                <input type="date" class="form-control" id="trx-date" required>
+                            </div>
+                            <div class="col-md-8">
+                                <label for="trx-type" class="form-label required">Jenis Transaksi</label>
+                                <select class="form-select" id="trx-type" required>
+                                    <!-- Populated by JS -->
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-8">
+                                <label for="trx-desc" class="form-label required">Keterangan Detail</label>
+                                <input type="text" class="form-control" id="trx-desc" placeholder="Keterangan tambahan..." required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="trx-amount" class="form-label required">Nominal (Rp)</label>
+                                <input type="number" class="form-control" id="trx-amount" placeholder="0" min="1" required>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-light border small text-muted">
+                            <i class="bi bi-info-circle"></i> Jurnal Akuntansi (Debit/Kredit) akan dibuat otomatis oleh sistem berdasarkan jenis transaksi yang dipilih agar selalu <b>Balance</b>.
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-warning btn-lg text-white" id="btn-process">
+                                <i class="bi bi-gear-fill"></i> Proses Jurnal
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Preview Section (Initially Hidden) -->
+                    <div id="journal-preview" class="mt-4 border-top pt-3" style="display: none;">
+                        <h5 class="text-center mb-3">Preview Jurnal Otomatis</h5>
+                        <div class="table-responsive mb-3">
+                            <table class="table table-bordered table-sm bg-white">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Akun</th>
+                                        <th class="text-end">Debit</th>
+                                        <th class="text-end">Kredit</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="preview-table-body">
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="d-grid">
+                            <button type="button" class="btn btn-success btn-lg" id="btn-confirm-save">
+                                <i class="bi bi-check-circle-fill"></i> Simpan Transaksi
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. Journal View -->
+        <section id="journal" class="app-section">
+            <h2 class="mb-4 border-bottom pb-2">Jurnal Umum</h2>
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> Jurnal ini dihasilkan otomatis dari transaksi yang Anda input.
+            </div>
+            <div class="card">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Tanggal</th>
+                                    <th>Keterangan</th>
+                                    <th>Akun</th>
+                                    <th class="text-end">Debit</th>
+                                    <th class="text-end">Kredit</th>
+                                </tr>
+                            </thead>
+                            <tbody id="journal-table-body">
+                                <!-- JS Populated -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. Reports View -->
+        <section id="reports" class="app-section">
+            <h2 class="mb-4 border-bottom pb-2">Laporan Keuangan</h2>
+            
+            <ul class="nav nav-tabs mb-3" id="reportTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="tb-tab" data-bs-toggle="tab" data-bs-target="#trial-balance" type="button">Neraca Saldo</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="pl-tab" data-bs-toggle="tab" data-bs-target="#income-statement" type="button">Laba Rugi</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="bs-tab" data-bs-toggle="tab" data-bs-target="#balance-sheet" type="button">Neraca (Posisi Keuangan)</button>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="reportTabsContent">
+                <!-- Trial Balance -->
+                <div class="tab-pane fade show active" id="trial-balance">
+                    <div class="card">
+                        <div class="card-header">Neraca Saldo (Trial Balance)</div>
+                        <div class="card-body p-0">
+                            <table class="table table-bordered table-striped mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Akun</th>
+                                        <th class="text-end">Debit</th>
+                                        <th class="text-end">Kredit</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="trial-balance-body"></tbody>
+                                <tfoot class="table-dark">
+                                    <tr>
+                                        <td>TOTAL</td>
+                                        <td class="text-end" id="tb-total-debit">0</td>
+                                        <td class="text-end" id="tb-total-credit">0</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Income Statement -->
+                <div class="tab-pane fade" id="income-statement">
+                    <div class="card">
+                        <div class="card-header">Laporan Laba Rugi</div>
+                        <div class="card-body p-0">
+                            <table class="table table-hover mb-0">
+                                <tbody id="income-statement-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Balance Sheet -->
+                <div class="tab-pane fade" id="balance-sheet">
+                    <div class="card">
+                        <div class="card-header">Laporan Posisi Keuangan (Neraca)</div>
+                        <div class="card-body p-0">
+                            <table class="table table-hover mb-0">
+                                <tbody id="balance-sheet-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. Settings / Data -->
+        <section id="settings" class="app-section">
+            <h2 class="mb-4 border-bottom pb-2">Manajemen Data</h2>
+            <div class="row justify-content-center">
+                <div class="col-md-6">
+                    <div class="card h-100 border-danger">
+                        <div class="card-body text-center text-danger">
+                            <h5 class="card-title">Reset Aplikasi</h5>
+                            <p class="card-text">Hapus semua data transaksi dari Local Storage browser ini.</p>
+                            <button id="btn-reset" class="btn btn-danger"><i class="bi bi-trash"></i> Hapus Semua Data</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- Bootstrap Bundle JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- App Logic -->
+    <script src="js/data.js"></script>
+    <script src="js/accounting.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        // Diagnostic Script
+        window.addEventListener('load', function() {
+            const checks = {
+                'DataManager': typeof DataManager !== 'undefined',
+                'Accounting': typeof Accounting !== 'undefined',
+                'UI': typeof UI !== 'undefined'
+            };
+            
+            let allOk = true;
+            let errors = [];
+            
+            for (const [module, loaded] of Object.entries(checks)) {
+                if (!loaded) {
+                    allOk = false;
+                    errors.push(module + ' failed to load');
+                }
+            }
+            
+            if (!allOk) {
+                const msg = 'System Diagnostic Error:\n' + errors.join('\n') + '\n\nCheck browser console for details.';
+                console.error(msg);
+                alert(msg);
+            } else {
+                console.log('All modules loaded successfully.');
+            }
+        });
+    </script>
+</body>
+</html>

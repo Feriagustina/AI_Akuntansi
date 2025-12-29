@@ -14,7 +14,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 1. Initialize Modules
     try {
+        // Auth Init
+        if (typeof AuthManager !== 'undefined') {
+            AuthManager.init();
+            
+            const loginForm = document.getElementById('login-form');
+            if (loginForm) {
+                loginForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const u = document.getElementById('login-username').value;
+                    const p = document.getElementById('login-password').value;
+                    if (!AuthManager.login(u, p)) {
+                        alert('Username atau Password salah!');
+                    }
+                });
+            }
+        }
+
         // Auto Load Demo Data if Empty
+        /*
         if (typeof DataManager !== 'undefined') {
             const data = DataManager.getData();
             if (!data.transactions || data.transactions.length === 0) {
@@ -22,6 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 DataManager.loadDemoData();
             }
         }
+        */
 
         if (typeof UI !== 'undefined' && UI.initTransactionForm) {
             UI.initTransactionForm();
@@ -41,6 +60,9 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (e) {
         console.error('Initialization Error:', e);
         alert('App Init Failed: ' + e.message);
+        if (targetId === 'journal-yearly' && typeof UI !== 'undefined' && typeof UI.renderYearlyJournal === 'function') {
+            UI.renderYearlyJournal();
+        }
     }
 });
 
@@ -101,16 +123,28 @@ document.addEventListener('click', function(e) {
             if (typeof DataManager !== 'undefined') {
                 DataManager.closeCurrentMonth();
                 if (typeof UI !== 'undefined') {
-                    UI.renderJournalCurrentMonth();
+                    UI.renderJournalCurrentMonth(); // Clear current journal
+                    UI.renderYearlyJournal(); // Update yearly journal immediately
                     UI.renderReports();
                 }
-                alert('Closing bulan berjalan berhasil.');
+                alert('Closing bulan berjalan berhasil.\nTransaksi telah dipindahkan ke Jurnal Tahunan.');
             }
         }
     }
 });
 
 function navigateTo(targetId) {
+    // Permission Check
+    if (typeof AuthManager !== 'undefined') {
+        const session = AuthManager.getSession();
+        if (session && !AuthManager.canAccess(session.role, targetId)) {
+            console.warn('Access denied to', targetId);
+            // Optional: redirect to allowed page or show error
+            // For now, just return to prevent navigation
+            return;
+        }
+    }
+
     const sections = document.querySelectorAll('.app-section');
     let found = false;
 
@@ -126,15 +160,47 @@ function navigateTo(targetId) {
 
     if (found) {
         window.scrollTo(0,0);
+        
+        // Sync Hash
+        const newHash = '#' + targetId;
+        if (window.location.hash !== newHash) {
+            if (history.pushState) {
+                history.pushState(null, null, newHash);
+            } else {
+                window.location.hash = targetId;
+            }
+        }
+
         // Trigger specific renders
         if (targetId === 'journal-monthly' && typeof UI !== 'undefined') {
             UI.renderJournalCurrentMonth();
         }
-        if (targetId === 'journal-yearly' && typeof UI !== 'undefined') {
-            UI.renderJournal(); // Yearly/Full
+        if (targetId === 'closing' && typeof UI !== 'undefined' && typeof UI.renderClosingPage === 'function') {
+            UI.renderClosingPage();
+        }
+        if (targetId === 'journal-yearly' && typeof UI !== 'undefined' && typeof UI.renderYearlyJournal === 'function') {
+            UI.renderYearlyJournal(); // Yearly/Full
         }
         if (targetId === 'reports' && typeof UI !== 'undefined') UI.renderReports();
+        if (targetId === 'general-ledger' && typeof UI !== 'undefined' && typeof UI.renderGeneralLedger === 'function') {
+            UI.renderGeneralLedger();
+        }
+        if (targetId === 'transaction-report' && typeof UI !== 'undefined' && typeof UI.renderTransactionReport === 'function') {
+            UI.renderTransactionReport();
+        }
+        if (targetId === 'settings' && typeof UI !== 'undefined' && typeof UI.renderSettings === 'function') {
+            UI.renderSettings();
+        }
     } else {
         console.error('Target section not found:', targetId);
     }
 }
+
+// Handle Browser Navigation (Back/Forward/Manual Hash Change)
+window.addEventListener('hashchange', () => {
+    const targetId = window.location.hash.substring(1);
+    console.log('Hash change detected:', targetId);
+    if (targetId) {
+        navigateTo(targetId);
+    }
+});

@@ -4,7 +4,7 @@
  */
 
 const DataManager = {
-    STORAGE_KEY: 'poc_accounting_data_v5',
+    STORAGE_KEY: 'poc_accounting_data_v7',
 
     // Default Account Chart (CoA) for Demo
     defaultAccounts: [
@@ -61,7 +61,7 @@ const DataManager = {
     ],
 
     // Transaction Types Mapping (Templates)
-    transactionTypes: [
+    defaultTransactionTypes: [
         // --- KELOMPOK PEMASUKAN / PENDAPATAN ---
         { 
             id: 'IN_MODAL_CASH', 
@@ -581,7 +581,21 @@ const DataManager = {
     getData() {
         const data = localStorage.getItem(this.STORAGE_KEY);
         if (data) {
-            return JSON.parse(data);
+            const parsed = JSON.parse(data);
+            // Migration for Transaction Types
+            if (!parsed.transactionTypes) {
+                parsed.transactionTypes = this.defaultTransactionTypes;
+            }
+            // Migration for Company Profile
+            if (!parsed.companyProfile) {
+                parsed.companyProfile = {
+                    name: 'Perusahaan Saya',
+                    address: '',
+                    phone: '',
+                    email: ''
+                };
+            }
+            return parsed;
         }
         return this.getEmptyData();
     },
@@ -590,8 +604,66 @@ const DataManager = {
         return {
             transactions: [],
             accounts: this.defaultAccounts,
+            transactionTypes: this.defaultTransactionTypes,
+            companyProfile: {
+                name: 'Perusahaan Saya',
+                address: '',
+                phone: '',
+                email: ''
+            },
             closedMonths: []
         };
+    },
+
+    // CRUD for Transaction Types
+    getTransactionTypes() {
+        return this.getData().transactionTypes || this.defaultTransactionTypes;
+    },
+
+    addTransactionType(type) {
+        const data = this.getData();
+        if (!data.transactionTypes) data.transactionTypes = this.defaultTransactionTypes;
+        
+        data.transactionTypes.push(type);
+        this.saveData(data);
+    },
+
+    updateTransactionType(id, updatedType) {
+        const data = this.getData();
+        if (!data.transactionTypes) data.transactionTypes = this.defaultTransactionTypes;
+        
+        const index = data.transactionTypes.findIndex(t => t.id === id);
+        if (index !== -1) {
+            data.transactionTypes[index] = { ...data.transactionTypes[index], ...updatedType };
+            this.saveData(data);
+            return true;
+        }
+        return false;
+    },
+
+    deleteTransactionType(id) {
+        const data = this.getData();
+        if (!data.transactionTypes) data.transactionTypes = this.defaultTransactionTypes;
+        
+        const initialLength = data.transactionTypes.length;
+        data.transactionTypes = data.transactionTypes.filter(t => t.id !== id);
+        
+        if (data.transactionTypes.length < initialLength) {
+            this.saveData(data);
+            return true;
+        }
+        return false;
+    },
+
+    // CRUD for Company Profile
+    getCompanyProfile() {
+        return this.getData().companyProfile;
+    },
+
+    updateCompanyProfile(profile) {
+        const data = this.getData();
+        data.companyProfile = { ...data.companyProfile, ...profile };
+        this.saveData(data);
     },
 
     saveData(data) {
@@ -603,32 +675,44 @@ const DataManager = {
     },
 
     loadDemoData() {
-        let dummyTransactions = this.generateDummyData2025();
-        
-        // Ensure NO December data exists (Safety Filter)
-        dummyTransactions = dummyTransactions.filter(t => !t.date.startsWith('2025-12'));
-
-        // Auto-close past months (Jan - Nov 2025)
-        // Assuming current date is Dec 2025 or later
-        const closedMonths = [];
-        for (let i = 1; i <= 11; i++) {
-            const m = String(i).padStart(2, '0');
-            closedMonths.push(`2025-${m}`);
-        }
-
+        // Generate Dummy Data for 2025
         const data = {
-            transactions: dummyTransactions,
+            transactions: this.generateDummyData2025(),
             accounts: this.defaultAccounts,
-            closedMonths: closedMonths
+            transactionTypes: this.defaultTransactionTypes,
+            companyProfile: {
+                name: 'Perusahaan Saya',
+                address: '',
+                phone: '',
+                email: ''
+            },
+            closedMonths: []
         };
+        // Mark all as posted (simulating historical data)
+        data.transactions.forEach(t => t.isPosted = true);
+        
+        // Add some current month (Unposted) data for testing
+        // Assuming "current" is Dec 2025 for the demo flow
+        const currentTrx = [
+            {
+                id: 'trx-dec-01',
+                date: '2025-12-01',
+                description: 'Pendapatan Jasa (Unposted)',
+                entries: [{ accountCode: '102', type: 'debit', amount: 500000 }, { accountCode: '401', type: 'credit', amount: 500000 }],
+                isPosted: false
+            }
+        ];
+        data.transactions.push(...currentTrx);
+
         this.saveData(data);
         return data;
     },
 
     addTransaction(transaction) {
         const data = this.getData();
-        // default: belum di-closing
-        data.transactions.push({ ...transaction });
+        // default: belum di-closing (Unposted), but respect if explicitly set (e.g. Closing Entries)
+        // Use spread order to ensure transaction properties override default
+        data.transactions.push({ isPosted: false, ...transaction });
         this.saveData(data);
     },
 
@@ -647,9 +731,31 @@ const DataManager = {
 
     closeCurrentMonth() {
         const data = this.getData();
-        const key = this.getCurrentMonthKey();
-        if (!data.closedMonths.includes(key)) {
-            data.closedMonths.push(key);
+        let hasChanges = false;
+        
+        // NEW LOGIC: "Closing Bulanan" simply marks ALL unposted transactions as Posted.
+        // It decouples "Closing" from the Date/Month check.
+        // This ensures that "Jurnal Bulanan" (Unposted) is cleared, and "Jurnal Tahunan" (Posted) is populated.
+        
+        if (data.transactions) {
+            data.transactions.forEach(trx => {
+                if (trx.isPosted !== true) {
+                    trx.isPosted = true;
+                    
+                    // We also track closedMonths for historical reference if needed,
+                    // but the primary logic is now isPosted flag.
+                    const mKey = this.getMonthKey(trx.date);
+                    if (!data.closedMonths) data.closedMonths = [];
+                    if (!data.closedMonths.includes(mKey)) {
+                        data.closedMonths.push(mKey);
+                    }
+                    
+                    hasChanges = true;
+                }
+            });
+        }
+
+        if (hasChanges) {
             this.saveData(data);
         }
         return data.closedMonths;
@@ -657,16 +763,31 @@ const DataManager = {
 
     getPostedTransactions() {
         const data = this.getData();
-        const set = new Set(data.closedMonths || []);
-        return (data.transactions || []).filter(trx => set.has(this.getMonthKey(trx.date)));
+        // Return transactions that are explicitly marked as posted
+        // Fallback: If isPosted is undefined, check closedMonths (for backward compatibility during migration)
+        const closedSet = new Set(data.closedMonths || []);
+        
+        return (data.transactions || []).filter(trx => {
+            if (typeof trx.isPosted !== 'undefined') {
+                return trx.isPosted === true;
+            }
+            // Backward compatibility
+            return closedSet.has(this.getMonthKey(trx.date));
+        });
     },
 
     getCurrentMonthTransactions() {
         const data = this.getData();
-        const key = this.getCurrentMonthKey();
-        const set = new Set(data.closedMonths || []);
-        // bulan berjalan yang belum di-closing
-        return (data.transactions || []).filter(trx => this.getMonthKey(trx.date) === key && !set.has(key));
+        // Return transactions that are NOT posted yet
+        const closedSet = new Set(data.closedMonths || []);
+
+        return (data.transactions || []).filter(trx => {
+            if (typeof trx.isPosted !== 'undefined') {
+                return trx.isPosted === false;
+            }
+            // Backward compatibility
+            return !closedSet.has(this.getMonthKey(trx.date));
+        });
     },
 
     getAccountName(code) {

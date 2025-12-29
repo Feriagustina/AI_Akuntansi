@@ -176,9 +176,49 @@ const UI = {
         });
     },
 
+    // Render Current Month Journal (Unclosed)
+    renderJournalCurrentMonth() {
+        const tbody = document.getElementById('current-journal-table-body');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+        
+        // Show ONLY transactions that are NOT in closed months
+        // Logic: Get current month transactions that are NOT closed
+        const transactions = DataManager.getCurrentMonthTransactions();
+        // Assuming getCurrentMonthTransactions returns transactions for current month
+        // We need to double check if they are already closed
+        
+        // Filter out if month is already closed?
+        // Actually, if it's closed, getCurrentMonthTransactions (logic in DataManager) might still return them if not filtered there.
+        // Let's rely on DataManager or filter here.
+        // Current implementation of DataManager.getCurrentMonthTransactions:
+        // return this.transactions.filter(t => ... same month/year ... && !this.isMonthClosed(t.date));
+        // Wait, I need to check DataManager implementation.
+        
+        const entries = Accounting.getJournalEntries(transactions);
+
+        if (entries.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center">Tidak ada transaksi baru bulan ini (atau sudah di-closing).</td></tr>';
+            return;
+        }
+
+        entries.forEach(entry => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${entry.date}</td>
+                <td>${entry.description}</td>
+                <td>${entry.accountCode} - ${entry.accountName}</td>
+                <td class="amount-col">${entry.debit > 0 ? this.formatCurrency(entry.debit) : '-'}</td>
+                <td class="amount-col">${entry.credit > 0 ? this.formatCurrency(entry.credit) : '-'}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    },
+
     // Render Reports
     renderReports() {
-        const transactions = DataManager.getData().transactions;
+        // Hanya bulan yang sudah di-closing masuk laporan
+        const transactions = DataManager.getPostedTransactions();
         
         // 1. Trial Balance
         const tbData = Accounting.getTrialBalance(transactions);
@@ -492,9 +532,7 @@ const UI = {
                 },
                 options: {
                     responsive: true,
-                    plugins: {
-                        legend: { position: 'bottom' }
-                    }
+                    plugins: { legend: { position: 'bottom' } }
                 }
             });
         }

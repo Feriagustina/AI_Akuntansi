@@ -4,7 +4,7 @@
  */
 
 const DataManager = {
-    STORAGE_KEY: 'poc_accounting_data_v2',
+    STORAGE_KEY: 'poc_accounting_data_v4',
 
     // Default Account Chart (CoA) for Demo
     defaultAccounts: [
@@ -310,7 +310,8 @@ const DataManager = {
         });
 
         // Monthly Routine Generator
-        for (let month = 0; month < 12; month++) {
+        // Generate only Jan - Nov (0 - 10), leave Dec (11) empty for manual input
+        for (let month = 0; month < 11; month++) {
             const m = String(month + 1).padStart(2, '0');
             const daysInMonth = new Date(year, month + 1, 0).getDate();
             const randomDay = () => String(Math.floor(Math.random() * (daysInMonth - 1)) + 1).padStart(2, '0');
@@ -588,7 +589,8 @@ const DataManager = {
     getEmptyData() {
         return {
             transactions: [],
-            accounts: this.defaultAccounts
+            accounts: this.defaultAccounts,
+            closedMonths: []
         };
     },
 
@@ -602,9 +604,19 @@ const DataManager = {
 
     loadDemoData() {
         const dummyTransactions = this.generateDummyData2025();
+        
+        // Auto-close past months (Jan - Nov 2025)
+        // Assuming current date is Dec 2025 or later
+        const closedMonths = [];
+        for (let i = 1; i <= 11; i++) {
+            const m = String(i).padStart(2, '0');
+            closedMonths.push(`2025-${m}`);
+        }
+
         const data = {
             transactions: dummyTransactions,
-            accounts: this.defaultAccounts
+            accounts: this.defaultAccounts,
+            closedMonths: closedMonths
         };
         this.saveData(data);
         return data;
@@ -612,8 +624,48 @@ const DataManager = {
 
     addTransaction(transaction) {
         const data = this.getData();
-        data.transactions.push(transaction);
+        // default: belum di-closing
+        data.transactions.push({ ...transaction });
         this.saveData(data);
+    },
+
+    // --- Monthly Closing Helpers ---
+    getMonthKey(dateStr) {
+        const d = new Date(dateStr);
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        return `${y}-${m}`;
+    },
+
+    getCurrentMonthKey() {
+        const d = new Date();
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        return `${y}-${m}`;
+    },
+
+    closeCurrentMonth() {
+        const data = this.getData();
+        const key = this.getCurrentMonthKey();
+        if (!data.closedMonths.includes(key)) {
+            data.closedMonths.push(key);
+            this.saveData(data);
+        }
+        return data.closedMonths;
+    },
+
+    getPostedTransactions() {
+        const data = this.getData();
+        const set = new Set(data.closedMonths || []);
+        return (data.transactions || []).filter(trx => set.has(this.getMonthKey(trx.date)));
+    },
+
+    getCurrentMonthTransactions() {
+        const data = this.getData();
+        const key = this.getCurrentMonthKey();
+        const set = new Set(data.closedMonths || []);
+        // bulan berjalan yang belum di-closing
+        return (data.transactions || []).filter(trx => this.getMonthKey(trx.date) === key && !set.has(key));
     },
 
     getAccountName(code) {

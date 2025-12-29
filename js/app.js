@@ -94,6 +94,20 @@ document.addEventListener('click', function(e) {
             }
         }
     }
+
+    // Closing Bulanan
+    if (e.target.closest('#btn-closing-month')) {
+        if (confirm('Closing bulan berjalan? Transaksi bulan ini akan dimasukkan ke laporan.')) {
+            if (typeof DataManager !== 'undefined') {
+                DataManager.closeCurrentMonth();
+                if (typeof UI !== 'undefined') {
+                    UI.renderJournalCurrentMonth();
+                    UI.renderReports();
+                }
+                alert('Closing bulan berjalan berhasil.');
+            }
+        }
+    }
 });
 
 function navigateTo(targetId) {
@@ -113,7 +127,12 @@ function navigateTo(targetId) {
     if (found) {
         window.scrollTo(0,0);
         // Trigger specific renders
-        if (targetId === 'journal' && typeof UI !== 'undefined') UI.renderJournal();
+        if (targetId === 'journal-monthly' && typeof UI !== 'undefined') {
+            UI.renderJournalCurrentMonth();
+        }
+        if (targetId === 'journal-yearly' && typeof UI !== 'undefined') {
+            UI.renderJournal(); // Yearly/Full
+        }
         if (targetId === 'reports' && typeof UI !== 'undefined') UI.renderReports();
     } else {
         console.error('Target section not found:', targetId);

@@ -27,10 +27,10 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="#input-transaction"><i class="bi bi-pencil-square"></i> Input Transaksi</a>
+                        <a class="nav-link" href="#journal-monthly"><i class="bi bi-calendar-month"></i> Jurnal Bulanan</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#journal"><i class="bi bi-journal-text"></i> Jurnal Umum</a>
+                        <a class="nav-link" href="#journal-yearly"><i class="bi bi-journal-bookmark"></i> Jurnal Tahunan</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="#reports"><i class="bi bi-bar-chart-line"></i> Laporan</a>
@@ -53,7 +53,6 @@
 
             <!-- Dashboard Charts -->
             <div class="row" id="dashboard-charts">
-                <!-- Row 1: Finance Trend (Full Width) -->
                 <div class="col-12 mb-4">
                     <div class="card h-100 shadow-sm">
                         <div class="card-header bg-white fw-bold">
@@ -64,8 +63,6 @@
                         </div>
                     </div>
                 </div>
-                
-                <!-- Row 2: Composition Charts -->
                 <div class="col-md-6 mb-4">
                     <div class="card h-100 shadow-sm">
                         <div class="card-header bg-white fw-bold">
@@ -92,12 +89,14 @@
 
     <div class="container py-4">
         
-        <!-- 2. Input Transaction -->
-        <section id="input-transaction" class="app-section">
-            <h2 class="mb-4 border-bottom pb-2">Input Transaksi</h2>
-            <div class="card">
+        <!-- 2. Jurnal Bulanan (Input + Current Table) -->
+        <section id="journal-monthly" class="app-section">
+            <h2 class="mb-4 border-bottom pb-2">Jurnal Bulanan</h2>
+            
+            <!-- Input Form -->
+            <div class="card mb-4">
                 <div class="card-header bg-primary text-white">
-                    Formulir Transaksi Baru
+                    <i class="bi bi-pencil-square"></i> Input Transaksi Baru
                 </div>
                 <div class="card-body">
                     <form id="transaction-form">
@@ -161,13 +160,42 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Current Month Table -->
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h5 class="mb-0">Transaksi Bulan Berjalan (Belum Closing)</h5>
+                <button id="btn-closing-month" class="btn btn-danger btn-sm"><i class="bi bi-lock-fill"></i> Closing Bulanan</button>
+            </div>
+            <div class="alert alert-info py-2 small">
+                <i class="bi bi-info-circle"></i> Transaksi di bawah ini belum masuk ke Laporan Keuangan. Lakukan <b>Closing Bulanan</b> untuk memindahkannya ke Jurnal Tahunan & Laporan.
+            </div>
+            <div class="card">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Tanggal</th>
+                                    <th>Keterangan</th>
+                                    <th>Akun</th>
+                                    <th class="text-end">Debit</th>
+                                    <th class="text-end">Kredit</th>
+                                </tr>
+                            </thead>
+                            <tbody id="current-journal-table-body">
+                                <!-- JS Populated -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </section>
 
-        <!-- 3. Journal View -->
-        <section id="journal" class="app-section">
-            <h2 class="mb-4 border-bottom pb-2">Jurnal Umum</h2>
-            <div class="alert alert-info">
-                <i class="bi bi-info-circle"></i> Jurnal ini dihasilkan otomatis dari transaksi yang Anda input.
+        <!-- 3. Jurnal Tahunan (Full History) -->
+        <section id="journal-yearly" class="app-section">
+            <h2 class="mb-4 border-bottom pb-2">Jurnal Umum Tahunan</h2>
+            <div class="alert alert-secondary">
+                <i class="bi bi-archive-fill"></i> Menampilkan seluruh data transaksi yang tercatat dalam sistem (termasuk yang sudah di-closing).
             </div>
             <div class="card">
                 <div class="card-body p-0">

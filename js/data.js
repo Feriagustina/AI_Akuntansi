@@ -4,7 +4,7 @@
  */
 
 const DataManager = {
-    STORAGE_KEY: 'poc_accounting_data_v4',
+    STORAGE_KEY: 'poc_accounting_data_v5',
 
     // Default Account Chart (CoA) for Demo
     defaultAccounts: [
@@ -603,8 +603,11 @@ const DataManager = {
     },
 
     loadDemoData() {
-        const dummyTransactions = this.generateDummyData2025();
+        let dummyTransactions = this.generateDummyData2025();
         
+        // Ensure NO December data exists (Safety Filter)
+        dummyTransactions = dummyTransactions.filter(t => !t.date.startsWith('2025-12'));
+
         // Auto-close past months (Jan - Nov 2025)
         // Assuming current date is Dec 2025 or later
         const closedMonths = [];
@@ -631,10 +634,8 @@ const DataManager = {
 
     // --- Monthly Closing Helpers ---
     getMonthKey(dateStr) {
-        const d = new Date(dateStr);
-        const y = d.getFullYear();
-        const m = String(d.getMonth() + 1).padStart(2, '0');
-        return `${y}-${m}`;
+        // Safe way to get YYYY-MM from YYYY-MM-DD string
+        return dateStr.substring(0, 7);
     },
 
     getCurrentMonthKey() {

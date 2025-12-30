@@ -47,6 +47,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Render Analytics if on dashboard
             if (typeof UI.renderDashboardAnalytics === 'function') {
                 UI.renderDashboardAnalytics();
+                // Render AI Insight
+                if (typeof AIAgent !== 'undefined') AIAgent.renderWidget('ai-insight-card');
             }
             console.log('UI Initialized');
         } else {
@@ -89,6 +91,7 @@ document.addEventListener('click', function(e) {
         // Render Analytics if navigating to dashboard
         if (targetId === 'landing-page' && typeof UI !== 'undefined' && UI.renderDashboardAnalytics) {
             UI.renderDashboardAnalytics();
+            if (typeof AIAgent !== 'undefined') AIAgent.renderWidget('ai-insight-card');
         }
         
         // Close Mobile Menu
